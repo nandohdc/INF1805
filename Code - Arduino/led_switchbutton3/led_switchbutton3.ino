@@ -1,14 +1,14 @@
 /* 
- *  Title: Press button for turn on the led.
+ *  Title: Press button for increase brightness on led.
  *  Author: Fernando Homem da Costa
  */
 
 /*Global variables*/
 int switchButton = 8;
-int ledPin = 13;
+int ledPin = 11;
 boolean stateButton = LOW;
 boolean currentButton = LOW;
-boolean stateLed = false;
+int LedLevel = 0;
 long currentMillis = 0;
 
 void setup() {
@@ -35,8 +35,12 @@ void loop() {
   currentButton = debounce(stateButton);
   
   if (stateButton == LOW && currentButton == HIGH) {
-    stateLed = !stateLed;
+    LedLevel = LedLevel + 51;
   }
+   
    stateButton = currentButton;
-   digitalWrite(ledPin, stateLed);
+
+   if(LedLevel > 255)
+   LedLevel = 0;
+   analogWrite(ledPin, LedLevel);
 }
