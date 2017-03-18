@@ -5,7 +5,7 @@
 
 /*Global variables*/
 int switchButton = 8;
-int ledPin = 13;
+int ledPin = 11;
 boolean stateButton = LOW;
 boolean currentButton = LOW;
 boolean stateLed = false;
