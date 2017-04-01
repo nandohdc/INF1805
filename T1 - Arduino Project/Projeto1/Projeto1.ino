@@ -2,9 +2,9 @@
 #include <Ethernet.h>
 
 // Enter a MAC address and IP address for your controller below.
-byte mac[]={};
+byte mac[]={0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED};
 //Enter the IP adress
-IPAddress ip(192, 168, 0 ,1);
+IPAddress ip(10,0,0,20);
 
 //Initializing the port you want to use
 EthernetServer server(80);
@@ -21,18 +21,21 @@ void HTML_CLOSE(EthernetClient client){
 void HTML_HEAD(EthernetClient client){
     client.println("<head>");
     client.println("<meta charset='utf-8'>");
-    client.println("<title></title>");
+    client.println("<title>INF1805 - Trabalho 01 - Arduino</title>");
     client.println("<meta name='description' content='Fernando Homem da Costa e Felipe Vieira Cortes'>");
     client.println("<meta name='keywords' content='arduino, arduino webserver'>");
     client.println("<meta name='viewport' content='width=device-width, initial-scale=1'>");
     client.println("<link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css' integrity='sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u' crossorigin='anonymous'>");
-    client.println("<script src='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js' integrity='sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa' crossorigin='anonymous'></script>");
+    //client.println("<script src='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js' integrity='sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa' crossorigin='anonymous'></script>");
     client.println("</head>");
   }
 
-void HTML_BODY(EthernetClient client){
+void HTML_BODY_OPEN(EthernetClient client){
     client.println("<body>");
-    client.println("<h1>Hello World!</h1>");
+    client.println("<h1 class='text-center'>Hello World!</h1>");
+  }
+
+void HTML_BODY_CLOSE(EthernetClient client){
     client.println("</body>");
   }
 
@@ -45,7 +48,7 @@ void setup() {
 
 
   // start the Ethernet connection and the server:
-  Ethernet.begin(mac, ip);
+  Ethernet.begin(mac,ip);
   server.begin();
   Serial.print("server is at ");
   Serial.println(Ethernet.localIP());
@@ -73,8 +76,9 @@ void loop() {
           client.println("Connection: close");  // the connection will be closed after completion of the response
           client.println("Refresh: 5");  // refresh the page automatically every 5 sec
           client.println();
-          client.println("<!DOCTYPE HTML>");
-          client.println("<html>");
+          HTML_OPEN(client);
+          HTML_HEAD(client);
+          HTML_BODY_OPEN(client);
           // output the value of each analog input pin
           for (int analogChannel = 0; analogChannel < 6; analogChannel++) {
             int sensorReading = analogRead(analogChannel);
@@ -84,7 +88,8 @@ void loop() {
             client.print(sensorReading);
             client.println("<br />");
           }
-          client.println("</html>");
+         HTML_BODY_CLOSE(client);
+         HTML_CLOSE(client);
           break;
         }
         if (c == '\n') {
