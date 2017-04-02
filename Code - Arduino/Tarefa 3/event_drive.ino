@@ -4,24 +4,30 @@
 long int millis_time = 0;
 int interval = 0;
 int button_listener = 0;
+boolean interesseTimer = false;
+boolean vecButtons[3]={false,false,false};
 boolean button_pressed = false;
 boolean time_exipre = false;
 /******** End: Globals ********/
 
 void button_listen(int pin){
     button_listener = digitalRead(pin);
+    vecButtons[pin-1] = true;
   }
 
 void timer_set(int ms){
     millis_time = millis();
     interval = ms;
+    interesseTimer = true;
   }
 
 void setup() {
   // put your setup code here, to run oncve:
-   pinMode(A1,INPUT);
-   pinMode(13, OUTPUT);
-   init_application();
+ pinMode(LED_PIN, OUTPUT);
+ pinMode(BUT_PIN, INPUT);
+ pinMode(BUT_PIN1, INPUT);
+ pinMode(BUT_PIN2, INPUT);
+ init_application();
 }
 
 void loop() {
@@ -31,7 +37,8 @@ void loop() {
       button_pressed = newButtonState;
       button_changed(A1, button_pressed);
     }
-  if(millis() >= (millis_time + interval)){
+  if(interesseTimer && millis() >= (millis_time + interval)){
+      interesseTimer = false;
       timer_expired();
     }
 
