@@ -1,11 +1,10 @@
 #include <SPI.h>
 #include <Ethernet.h>
 #include <SD.h>
-
 // Enter a MAC address and IP address for your controller below.
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 //Enter the IP adress
-IPAddress ip(10, 0, 0, 20);
+IPAddress ip(10,0,0,21);
 
 //Initializing the port you want to use
 EthernetServer server(80);
@@ -14,10 +13,10 @@ EthernetServer server(80);
 #define BCKSP A2
 #define ROWB A1
 #define COLLUMNB A0
-#define SENDLED 8
-#define ROWLED 12
-#define COLLUMNLED 13
-#define BCKSPLED 11
+#define SENDLED 6
+#define ROWLED 8
+#define COLLUMNLED 9
+#define BCKSPLED 7
 #define TOLLERANCE 2000
 // digital pin 2 has a pushbutton attached to it. Give it a name:
 int pushButton[4] = { COLLUMNB,ROWB,BCKSP,SENDB };
@@ -26,9 +25,23 @@ int countPush[4] = { 0,0,0,0 }; // variable counting the times the button was pu
 int pressTime = 0; // this variable will get the millis() when the button was pressed
 int newState[4] = { 0,0,0,0 };
 int lastState[4] = { 0,0,0,0 };
-char matrix[6][5] = { { 'a','b','c','d','e' },{ 'f','g','h','i','j' },{ 'k','l','m','n','o' },{ 'p','q','r','s','t' },{ 'u','v','w','x','y' },{ 'z',' ','.',',','!' } };
+char matrix[6][6] = { { 'a','b','c','d','e','f'},{ 'g','h','i','j','k','l' },{ 'm','n','o','p','q','r' },{ 's','t','u','v','w','x' },{ 'y','z',' ','.',',','!' },{ '@','/','*','+','-','=' } };
+String Message = "";
+int sent = 0;
 File webFile;
+long int currentMillis;
 /* * * * * * * * * * * * */
+
+boolean debounce(boolean last, int pin){
+    boolean current = digitalRead(pushButton[pin]);
+    long localMillis = millis();
+    if(last != current){
+       if(localMillis - currentMillis >= 5){
+          current = digitalRead(pushButton[pin]);
+       }
+      }
+     return current;
+  }
 
 void checkSend(EthernetClient client) {
 
@@ -43,6 +56,8 @@ void checkSend(EthernetClient client) {
     lastS = newS;
     digitalWrite(currentLed, HIGH);
     sendMsg(client);
+    sent = 1;
+    Serial.println("Message sent");
   }
   if ((newS == 0) && (lastS == 1)) {
     lastS = newS;
@@ -53,22 +68,25 @@ void checkSend(EthernetClient client) {
 
 }
 void sendMsg(EthernetClient client) {
-  client.println(matrix[countPush[1]][countPush[0]]);
-  client.println("<br />");
+  Message+=matrix[countPush[1]][countPush[0]];
+  countPush[1] = 0;
+  countPush[0] = 0;
 }
 void stateChangeRoutine(int indx) {
-
+  
   int currentButton = pushButton[indx];
   int currentLed = ledPin[indx];
   int currentCount = countPush[indx];
   int newS = newState[indx];
   int lastS = lastState[indx];
 
-  newS = digitalRead(currentButton);
+  currentMillis = millis();
+  
+  newS = debounce(lastS, indx);
   //Serial.println(newS);
   if ((newS == 1) && (lastS == 0)) {
     lastS = newS;
-    if (currentCount < 4)
+    if (currentCount < 5)
       currentCount++;
     else
       currentCount = 0;
@@ -117,7 +135,7 @@ void setup() {
 void loop() {
   // listen for incoming clients
   EthernetClient client = server.available();
-  if (client) {
+  if (client && sent) {
     Serial.println("new client");
     // an http request ends with a blank line
     boolean currentLineIsBlank = true;
@@ -131,11 +149,12 @@ void loop() {
         if (c == '\n' && currentLineIsBlank) {
           stateChangeRoutine(0);
           stateChangeRoutine(1);
-          // send a standard http response header
+          // send a standard http response header 
           client.println("HTTP/1.1 200 OK");
           client.println("Content-Type: text/html");
           client.println("Connection: close");  // the connection will be closed after completion of the response
-          client.println("Refresh: 5");  // refresh the page automatically every 5 sec
+          client.println("Refresh:1");  // refresh the page automatically every 5 sec
+        //  client.println("Refresh:0");  // refresh the page automatically every 5 sec
           client.println();
           // send web page
           webFile = SD.open("index.htm");        // open web page file
@@ -145,8 +164,10 @@ void loop() {
             }
             webFile.close();
           }
+          client.println("<div class='text-center'>");
+          client.println("<h2>Seu texto está aqui: </h2>");
+          client.println("</br>" +  Message + "</br>" + "</div>");
           //Envia msg digitada pela a pessoa.
-          //client.println("<h1>OI</h1>");
           break;
         }
         if (c == '\n') {
@@ -163,6 +184,14 @@ void loop() {
     delay(1);
     // close the connection:
     client.stop();
+    sent = 0;
     Serial.println("client disconnected");
+  }
+  else{
+      stateChangeRoutine(0);
+      stateChangeRoutine(1);
+      stateChangeRoutine(2);
+      if(!sent)
+      checkSend(0);
   }
 }
