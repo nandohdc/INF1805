@@ -43,7 +43,7 @@ boolean debounce(boolean last, int pin){
      return current;
   }
 
-void checkSend(EthernetClient client) {
+void checkSend() {
 
   int currentButton = pushButton[3];
   int currentLed = ledPin[3];
@@ -55,7 +55,7 @@ void checkSend(EthernetClient client) {
   if ((newS == 1) && (lastS == 0)) {
     lastS = newS;
     digitalWrite(currentLed, HIGH);
-    sendMsg(client);
+    sendMsg();
     sent = 1;
     Serial.println("Message sent");
   }
@@ -67,7 +67,7 @@ void checkSend(EthernetClient client) {
   lastState[3] = lastS;
 
 }
-void sendMsg(EthernetClient client) {
+void sendMsg() {
   Message+=matrix[countPush[1]][countPush[0]];
   countPush[1] = 0;
   countPush[0] = 0;
@@ -154,7 +154,6 @@ void loop() {
           client.println("Content-Type: text/html");
           client.println("Connection: close");  // the connection will be closed after completion of the response
           client.println("Refresh:1");  // refresh the page automatically every 5 sec
-        //  client.println("Refresh:0");  // refresh the page automatically every 5 sec
           client.println();
           // send web page
           webFile = SD.open("index.htm");        // open web page file
@@ -192,6 +191,6 @@ void loop() {
       stateChangeRoutine(1);
       stateChangeRoutine(2);
       if(!sent)
-      checkSend(0);
+      checkSend();
   }
 }
