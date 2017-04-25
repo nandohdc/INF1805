@@ -102,30 +102,56 @@ function newPlayer (vel)
         end
     end),
     draw = function ()
-      	love.graphics.draw(img.spaceship, _x-16, _y-16)
+      	love.graphics.draw(img.spaceship, _x-6, _y-17)
+      --	lg.rectangle('fill',_x,_y,55,30)
     end,
     x = _x,
     y = _y,
-    w = 20,
-    h = 20,
+    w = 55,
+    h = 30,
     decorr = 0
   }
 end
 
-function newObjective ()
+function newObjective (vel)
   local _x,_y = math.random(0,WW),math.random(0,HH)
+  local direction = "up"
+  local floatingY = _y
+  if math.random(0,1) > 0 then
+  	direction = "up"
+  else
+  	direction = "down"
+  end
   return {
-    update = function (self)
-    	self.x = _x
-    	self.y = _y
-    end,
+    update = coroutine.wrap(function (self)
+        while true do
+            local width, height = love.graphics.getDimensions( )
+            local oldX, oldY = _x,_y
+            if direction == "up" then
+            	_y = _y+1
+            else
+            	_y = _y-1
+            end
+            if _y >= floatingY + 25 then
+            	direction = "down"
+            	_y = oldY
+            elseif _y <= floatingY then
+            	direction = "up"
+            	_y=oldY
+            end
+            self.y = _y
+            wait(vel,self)
+        end
+    end),
     draw = function ()
-      love.graphics.draw(img.objective, _x-16, _y-16)
+      love.graphics.draw(img.objective, _x, _y)
+     -- lg.rectangle('line',_x,_y,40,64)
     end,
     x = _x,
     y = _y,
-    w = 50,
-    h = 50
+    w = 32,
+    h = 51,
+    decorr = 0
   }
 end
 
@@ -188,7 +214,7 @@ function love.load()
     Obstacles[i] = newObs(i*50/50000)
   end
   Player = newPlayer(5/1000)
-  Objective = newObjective()
+  Objective = newObjective(40/1000)
   listaShot = {}
 end
 
@@ -196,11 +222,11 @@ function love.draw()
   love.graphics.draw(img.background, 0, 0)
   lg.setColor(255,255,255,255)
   lg.rectangle('line', 0,0,40,40)
+  Objective.draw()
   for i = 1,#Obstacles do
     Obstacles[i].draw()
   end
   Player.draw()
-  
   lg.setColor(255,0,0,255)
   font = love.graphics.newFont(20)
   font = love.graphics.setFont(font)
@@ -227,7 +253,11 @@ function love.update(dt)
   if Player.decorr <= tempDecorr then
       Player:update()
   end
-  Objective:update()
+  
+  if Objective.decorr <= tempDecorr then
+  	Objective:update()
+  end
+  
   for i = 1,#listaShot do
   	listaShot[i]:update()
   end
@@ -311,7 +341,7 @@ end
 
 function getScore()
 	if isCollidingWith(Player,Objective) then
-		Objective = newObjective()
+		Objective = newObjective(40/1000)
 		score = score + 1
 	end
 end
