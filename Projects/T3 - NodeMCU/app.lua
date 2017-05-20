@@ -3,6 +3,12 @@ local deb_old,deb_new = 0,0;
 local button1, button2 = 1,2
 gpio.mode(button1,gpio.INT,gpio.PULLUP)
 gpio.mode(button2,gpio.INT,gpio.PULLUP)
+led_livre = LED(6)
+led_ocupado = LED(3)
+led_livre.inicia()
+led_ocupado.inicia()
+--led_ocupado.inicia
+
 --gpio.mode(button1,gpio.INT)
 --gpio.mode(button2,gpio.INT)
 local function readtemp()
@@ -10,12 +16,11 @@ local function readtemp()
 end
 
 function publica(c)
-local msg = math.random(15)
     return{
       message = function()
               print("publicando..")
-              c:publish("test/topic", msg,0,0, 
-                function(c) print("mandei temp!") end)
+              c:publish("connect", nodemcu.ID,0,0, 
+                function(c) print("ip enviado") end)
             end,
       temp = function ()
               print("publicando..")
@@ -44,9 +49,18 @@ function recebeControle(c)
 end
 
 function reageBotao(pin,c)
+        led_livre.desliga()
+        led_ocupado.desliga()
         print("reacting...")
-        c:publish("test/topic", "publishing from button "..pin,0,0, 
+       if(pin == button1) then
+            c:publish("infos",nodemcu.ID.." ocupado ".."31",0,0, 
                 function(c) print("done") end)
+            led_ocupado.liga()
+       else
+            c:publish("infos",nodemcu.ID.." livre ".."31",0,0, 
+                function(c) print("done") end)
+            led_livre.liga()
+       end
 end
 function conectado (client)    
     local envia = publica(client)

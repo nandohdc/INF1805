@@ -1,10 +1,10 @@
 --Configuracoes do nodemcu para ser identificado numa rede
 nodemcu = {
-    ID = math.random(15),
+    ID = 0,
     wificonfig = {
         --Colocar em SSID a rede desejada para conectar
-        ssid = "Homem's Wi-Fi",
-        pwd = "02051993",
+        ssid = "linksys_SES_25925",
+        pwd = "f5e1bc7fda2da14f1c3266f607",
         save = false
     }
 }
@@ -13,18 +13,19 @@ nodemcu = {
 LD1 = 6;
 LD2 = 3;
 
-function LED(pin_num)
+function LED(led_pin)
+    local pin = led_pin
     return {
         inicia = function()
-                    gpio.mode(pin_num, gpio.OUTPUT)
-                    gpio.write(pin_num, gpio.LOW)
+                    gpio.mode(pin, gpio.OUTPUT)
+                    gpio.write(pin, gpio.LOW)
                  end,
         liga = function()
-                print("O NodeMCU #"..nodemcu.ID.." Ligando Led #"..pin_num)
-                gpio.write(pin_num, gpio.HIGH)
+                print("O NodeMCU #"..nodemcu.ID.." Led #"..pin.." Ligado")
+                gpio.write(pin, gpio.HIGH)
                end,
         desliga = function()
-                    gpio.write(pin_num, gpio.LOW)
+                    gpio.write(pin, gpio.LOW)
                   end       
     }
 end
@@ -36,15 +37,13 @@ wifi.sta.config(nodemcu.wificonfig)
 
 wifi.sta.connect()
 
-
 if(wifi.sta.status() == 5) then
-    Led = LED(LD1)
-    Led.inicia(LD1)
-    Led.inicia(LD2)
-    Led.desliga(LD2)
-    Led.liga(LD1)
+    nodemcu.ID = wifi.sta.getip()
     print("O NodeMCU #"..nodemcu.ID.." is connected to "..nodemcu.wificonfig.ssid)
-    print(wifi.sta.getip())
+    local led_green = LED(LD1)
+    local led_red = LED(LD2)
+    led_green.inicia()
+    led_red.inicia()
+    led_red.desliga()
+    led_green.liga()
 end
-
-print(wifi.sta.getip())
