@@ -1,5 +1,10 @@
 local m = mqtt.Client("clientid", 120)
-
+local deb_old,deb_new = 0,0;
+local button1, button2 = 1,2
+gpio.mode(button1,gpio.INT,gpio.PULLUP)
+gpio.mode(button2,gpio.INT,gpio.PULLUP)
+--gpio.mode(button1,gpio.INT)
+--gpio.mode(button2,gpio.INT)
 local function readtemp()
   lasttemp = adc.read(0)*(3.3/10.24)
 end
@@ -30,18 +35,7 @@ function inscreve(c)
                                     msgsrec = msgsrec + 1
                             end
                             c:on("message", novamsg)
-                        end,
-      novaInscricao2 = function()
-                            local msgsrec = 0
-                            function novamsg (c, t, m)
-                              print ("mensagem ".. msgsrec .. ", topico: ".. t .. ", dados: " .. m)
-                              timer:unregister()
-                              timer:register(tonumber(m)*1000, tmr.ALARM_AUTO, function() publicaTemp(c) end)
-                              timer:start()
-                              msgsrec = msgsrec + 1
-                            end
-                            c:on("message", novamsg)
-                       end     
+                        end  
     }
 end
 
@@ -49,15 +43,22 @@ function recebeControle(c)
     c:subscribe("test/topic",0,novaInscricao)
 end
 
-function conectado (client)
+function reageBotao(pin,c)
+        print("reacting...")
+        c:publish("test/topic", "publishing from button "..pin,0,0, 
+                function(c) print("done") end)
+end
+function conectado (client)    
     local envia = publica(client)
     local inscrito = inscreve(client)
     print("Conectado")
-    envia.message()
     inscrito.novaInscricao()
     recebeControle(client)   
+    envia.message()
+    gpio.trig(button1,"down", function () reageBotao(button1,client) end)
+    gpio.trig(button2,"down", function () reageBotao(button2,client) end)
 end 
 
-m:connect("10.80.70.115", 1883, 0,
+m:connect("192.168.1.12", 1883, 0,
              conectado,
 function(client, reason) print("failed reason: "..reason) end)
