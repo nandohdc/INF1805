@@ -3,9 +3,9 @@ srv = net.createServer(net.TCP)
 function receiver(sck, request)
 
   local vals = {
-    QtdDevices = 20,
-    MaxTemp = 30,
-    MinTemp = 16,
+    QtdDevices = math.random(10),
+    MaxTemp = math.random(100),
+    MinTemp = math.random(20),
   }
 
   local buf = [[
@@ -41,8 +41,8 @@ function receiver(sck, request)
           <thead>
             <tr>
               <th>Quantidade de dispositivos Ativos: </th>
-              <th>Menor Temperatura (ºC): </th>
-              <th>Maior Temperatura (ºC): </th>
+              <th>Menor Temperatura (C): </th>
+              <th>Maior Temperatura (C): </th>
             </tr>
           </thead>
           <tbody>
@@ -61,7 +61,7 @@ function receiver(sck, request)
       <div class="row" id="contact-me">
         <h4><strong>Authors</strong></h4>
         <div class="row">
-          <p class="text-center">Felipe Vieira Côrtes and Fernando Homem da Costa</p>
+          <p class="text-center">Felipe Vieira Cortes and Fernando Homem da Costa</p>
           <p class="text-center"><a href="https://github.com/nandohdc/INF1805/tree/master/Projects/T3%20-%20NodeMCU">GitHub</a></p>
         </div>
       </div>
