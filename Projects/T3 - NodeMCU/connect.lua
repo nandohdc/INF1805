@@ -3,8 +3,8 @@ nodemcu = {
     ID = 0,
     wificonfig = {
         --Colocar em SSID a rede desejada para conectar
-        ssid = "linksys_SES_25925",
-        pwd = "f5e1bc7fda2da14f1c3266f607",
+        ssid = "Homem's Wi-Fi",
+        pwd = "02051993",
         save = false
     }
 }
@@ -26,7 +26,7 @@ function LED(led_pin)
                end,
         desliga = function()
                     gpio.write(pin, gpio.LOW)
-                  end       
+                  end
     }
 end
 

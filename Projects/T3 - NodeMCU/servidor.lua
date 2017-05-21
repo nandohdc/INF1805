@@ -1,18 +1,93 @@
-srv = net.createServer(net.TCP)
+srv = net.createServer(net.TCP, 30)
+local m = mqtt.Client("clientid", 120)
 
-function receiver(sck, request)
 
-  local vals = {
-    QtdDevices = math.random(10),
-    MaxTemp = math.random(100),
-    MinTemp = math.random(20),
+list_Clients = {}
+
+vals = {
+    QtdDevices = 0,
+    MinTemp = 100,
+    MaxTemp = 0,
   }
 
-  local buf = [[
+function updateMaxTemp()
+local temp
+local maxtemp
+    for i in pairs(list_Clients) do
+        temp = tonumber(list_Clients[i].Temp)
+        maxtemp = vals.MaxTemp
+        if (temp > maxtemp) then
+            maxtemp = temp
+        end
+    end
+    vals.MaxTemp = maxtemp
+end
+
+function updateMinTemp()
+local temp
+local mintemp   
+    for i in pairs(list_Clients) do
+        temp = tonumber(list_Clients[i].Temp)
+        mintemp = vals.MinTemp
+        if (temp < mintemp) then
+            mintemp = temp
+        end
+    end
+    vals.MinTemp = mintemp
+end
+
+function splitString(newString)
+    -- IP(xxx.xxx.xxx.xxx)-STATUS -TEMP
+     splittedString = {}
+     for i in string.gmatch(newString, "%S+") do
+       table.insert(splittedString, i)
+    end
+    return splittedString
+end
+
+msgsConnect = 0
+msgsInfos = 0
+  
+function trataTopico(c, t, m)
+    if(t == "connect") then
+       print ("mensagem ".. msgsConnect .. ", topico: ".. t .. ", dados: " .. m)
+       list_Clients[m] = {ID= m, Temp= nil, Status= nil}
+       msgsConnect = msgsConnect + 1
+       vals.QtdDevices = msgsConnect
+    elseif(t == "infos") then
+       print ("mensagem ".. msgsInfos .. ", topico: ".. t .. ", dados: " .. m)
+       local split = splitString(m)
+       list_Clients[split[1]].Status = split[2]
+       list_Clients[split[1]].Temp = split[3]
+       updateMaxTemp()
+       updateMinTemp()
+       msgsInfos = msgsInfos + 1
+    end
+end
+
+function inscreve(c)
+    return{
+      Inscricao = function()
+                       c:on("message", trataTopico)
+                  end   
+    }
+end
+
+function recebeInfos(c)
+    c:subscribe("infos", 0, Infos)
+end
+
+function recebeConexao(c)
+    c:subscribe("connect", 0, Inscricao)
+end
+
+function receiver(sck, request)
+local buf = [[
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Cache-control" content="no-cache">
 <meta name="description" content="INF1805 - Sistemas Reativos">
 <meta name="keywords" content="React systems, Computer Engineering, INF1805">
 <meta name="author" content="Felipe Vieira Côrtes e Fernando Homem da Costa">
@@ -71,7 +146,6 @@ function receiver(sck, request)
 </body>
 </html>
 ]]
-
   buf = string.gsub(buf, "$(%w+)", vals)
   sck:send(buf, function() print("respondeu") sck:close() end)
 end
@@ -82,6 +156,19 @@ if srv then
       conn:on("receive", receiver)
     end)
 end
+
+
+function conectado (client)
+    local inscrito = inscreve(client)
+    print("Conectado")
+    inscrito.Inscricao()
+    recebeConexao(client)
+    recebeInfos(client)
+end 
+
+m:connect("10.80.70.115", 1883, 0,
+             conectado,
+function(client, reason) print("failed reason: "..reason) end)
 
 addr, port = srv:getaddr()
 print(addr, port)
