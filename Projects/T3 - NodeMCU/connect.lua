@@ -3,8 +3,8 @@ nodemcu = {
     ID = 0,
     wificonfig = {
         --Colocar em SSID a rede desejada para conectar
-        ssid = "Homem's Wi-Fi",
-        pwd = "02051993",
+        ssid = "Valinor",
+        pwd = "bateria123",
         save = false
     }
 }

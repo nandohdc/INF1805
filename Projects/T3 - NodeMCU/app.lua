@@ -1,4 +1,4 @@
-local m = mqtt.Client("clientid", 120)
+local m = mqtt.Client(nodemcu.ID, 120)
 local deb_old,deb_new = 0,0;
 local button1, button2 = 1,2
 gpio.mode(button1,gpio.INT,gpio.PULLUP)
@@ -16,14 +16,10 @@ function publica(c)
     return{
       message = function()
               print("publicando..")
+              nodemcu.ID = wifi.sta.getip()
               c:publish("connect", nodemcu.ID,0,0, 
                 function(c) print("ip enviado") end)
-            end,
-      temp = function ()
-              print("publicando..")
-              c:publish("temperatura","F&F : "..TEMP,0,0, 
-                function(c) print("mandei temp!") end)
-             end
+            end
     }
 end
 
@@ -42,7 +38,7 @@ function inscreve(c)
 end
 
 function recebeControle(c)
-    c:subscribe("test/topic",0,novaInscricao)
+    c:subscribe("connect",0,novaInscricao)
 end
 
 function reageBotao(pin,c)
@@ -50,11 +46,11 @@ function reageBotao(pin,c)
         led_ocupado.desliga()
         print("reacting...")
        if(pin == button1) then
-            c:publish("infos",nodemcu.ID.." ocupado ".."31",0,0, 
+            c:publish("infos",nodemcu.ID.." occupied ".."31",0,0, 
                 function(c) print("done") end)
             led_ocupado.liga()
        else
-            c:publish("infos",nodemcu.ID.." livre ".."31",0,0, 
+            c:publish("infos",nodemcu.ID.." free ".."31",0,0, 
                 function(c) print("done") end)
             led_livre.liga()
        end
@@ -70,6 +66,6 @@ function conectado (client)
     gpio.trig(button2,"down", function () reageBotao(button2,client) end)
 end 
 
-m:connect("192.168.1.12", 1883, 0,
+m:connect("192.168.43.35", 1883, 0,
              conectado,
 function(client, reason) print("failed reason: "..reason) end)
