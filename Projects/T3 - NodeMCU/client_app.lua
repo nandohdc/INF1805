@@ -23,11 +23,6 @@ function publica(c)
               c:publish("connect", nodemcu.ID,0,0, 
                 function(c) print("ip enviado") end)
             end,
-      temp = function ()
-              print("publicando..")
-              c:publish("temperatura","F&F : "..TEMP,0,0, 
-                function(c) print("mandei temp!") end)
-             end
     }
 end
 
