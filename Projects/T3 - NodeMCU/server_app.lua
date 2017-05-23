@@ -1,39 +1,65 @@
 srv = net.createServer(net.TCP, 30)
 local m = mqtt.Client("clientid", 120)
 
-
+client_table = {}
 list_Clients = {}
 
+AvgTemp = 0
+FreeSpaces = 0
+OccupiedSpaces = 0
+
+hotSpot = 0
+coldSpot = 0
 vals = {
     QtdDevices = 0,
     MinTemp = 100,
     MaxTemp = 0,
+    AvgTemp = 0,
+    FreeDevices = 0,
+    OccupiedDevices = 0,
   }
 
-function updateMaxTemp()
-local temp
-local maxtemp
-    for i in pairs(list_Clients) do
-        temp = tonumber(list_Clients[i].Temp)
-        maxtemp = vals.MaxTemp
-        if (temp > maxtemp) then
-            maxtemp = temp
+function updateStatus()
+    local freesum, occsum = 0,0
+    local tmpS
+    for i in pairs(client_table) do
+        tmpS = client_table[i].Status
+        if(tmpS == "occupied") then
+            occsum = occsum + 1
+        elseif(tmpS == "free") then
+            freesum = freesum + 1
+        else
+            print("UPDATE ERROR: Not free nor occupied")
         end
     end
-    vals.MaxTemp = maxtemp
+    vals.FreeDevices = freesum
+    vals.OccupiedDevices = occsum
 end
-
-function updateMinTemp()
-local temp
-local mintemp   
-    for i in pairs(list_Clients) do
-        temp = tonumber(list_Clients[i].Temp)
-        mintemp = vals.MinTemp
+function updateMaxMinTemp()
+local mintemp = 9999
+local maxtemp = 0
+local avgtemp = 0
+local c = 0
+local temp = 0
+    for i in pairs(client_table) do
+        c = c + 1
+        temp = tonumber(client_table[i].Temp)
         if (temp < mintemp) then
             mintemp = temp
+            coldSpot = client_table[i].ID
         end
+        if(temp > maxtemp) then
+            maxtemp = temp
+            hotSpot = client_table[i].ID
+        end
+        avgtemp = avgtemp + temp
+     
+    end
+    if c ~= 0 then
+        vals.AvgTemp = avgtemp/c
     end
     vals.MinTemp = mintemp
+    vals.MaxTemp = maxtemp
 end
 
 function splitString(newString)
@@ -49,9 +75,11 @@ msgsConnect = 0
 msgsInfos = 0
   
 function trataTopico(c, t, m)
+    print("topico : "..t)
     if(t == "connect") then
        print ("mensagem ".. msgsConnect .. ", topico: ".. t .. ", dados: " .. m)
        list_Clients[m] = {ID= m, Temp= nil, Status= nil}
+       table.insert(client_table, list_Clients[m])
        msgsConnect = msgsConnect + 1
        vals.QtdDevices = msgsConnect
     elseif(t == "infos") then
@@ -59,11 +87,49 @@ function trataTopico(c, t, m)
        local split = splitString(m)
        list_Clients[split[1]].Status = split[2]
        list_Clients[split[1]].Temp = split[3]
-       updateMaxTemp()
-       updateMinTemp()
+       updateMaxMinTemp()
+       updateStatus()
        msgsInfos = msgsInfos + 1
+    elseif(t == "disconnect") then
+        print ("mensagem ".. msgsInfos .. ", topico: ".. t .. ", dados: " .. m)
+        for i in pairs(client_table) do
+            local id = client_table[i].ID
+            if (id == m) then
+                table.remove(client_table, i)
+                print("Node '"..id.."' removed from client_table")
+                print("new size : "..#client_table)
+                updateMaxMinTemp()
+                updateStatus()
+                vals.QtdDevices = vals.QtdDevices - 1
+            end
+        end
+    elseif(t == "commands") then
+        if(m == "list ip") then
+            for i in pairs(client_table) do
+                print("> "..client_table[i].ID)
+            end
+        elseif(m == "list free") then
+            for i in pairs(client_table) do
+                if(client_table[i].Status == "free") then    
+                    print("> "..client_table[i].ID)
+                end
+            end
+        elseif(m == "list occ") then
+            for i in pairs(client_table) do
+                if(client_table[i].Status == "occupied") then 
+                    print("> "..client_table[i].ID)
+                end
+            end
+        elseif(m == "hot spot") then
+            print("> "..hotSpot)
+        elseif(m == "cold spot") then
+            print("> "..coldSpot)
+        else
+            print("Command '"..m.."' not recognized")
+        end
     end
 end
+
 
 function inscreve(c)
     return{
@@ -74,11 +140,14 @@ function inscreve(c)
 end
 
 function recebeInfos(c)
-    c:subscribe("infos", 0, Infos)
+    c:subscribe("infos", 0, Inscricao)
+    c:subscribe("commands", 0, Inscricao)
+    
 end
 
 function recebeConexao(c)
     c:subscribe("connect", 0, Inscricao)
+    c:subscribe("disconnect", 0, Inscricao)
 end
 
 function receiver(sck, request)
@@ -96,10 +165,6 @@ local buf = [[
 <title>INF1805 - Project 3</title>
 <!-- Latest compiled and minified CSS -->
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
-<!-- Optional theme -->
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
-<!-- Latest compiled and minified JavaScript -->
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
 </head>
 <body>
   <div class="container-fluid">
@@ -108,16 +173,18 @@ local buf = [[
       <h2 class="text-center">Biblioteca</h2>
     </div>
   </div>
-  <hr>
-  </hr>
+  <hr style="height: 1px; background-color: black;">
   <div class="container">
     <div class="row">
         <table class="table" style = "margin-top: 10%">
           <thead>
             <tr>
-              <th>Quantidade de dispositivos Ativos: </th>
+              <th>Quantidade de Dispositivos Ativos: </th>
               <th>Menor Temperatura (C): </th>
               <th>Maior Temperatura (C): </th>
+              <th>Temperatura Media(C): </th>
+              <th>Dispositivos Livres: </th>
+              <th>Dispositivos Ocupados: </th>
             </tr>
           </thead>
           <tbody>
@@ -125,14 +192,17 @@ local buf = [[
               <td>$QtdDevices</td>
               <td>$MinTemp</td>
               <td>$MaxTemp</td>
+              <td>$AvgTemp</td>
+              <td>$FreeDevices</td>
+              <td>$OccupiedDevices</td>
             </tr>
           </tbody>
         </table>
     </div>
   </div>
-  <hr style="margin-top: 20%">
+  <hr style="margin-top: 20%; height: 1px; background-color: black;">
   <div class="row">
-    <div class="text-center" >
+    <div class="text-center">
       <div class="row" id="contact-me">
         <h4><strong>Authors</strong></h4>
         <div class="row">
@@ -151,7 +221,8 @@ local buf = [[
 end
 
 if srv then
-  srv:listen(80,"10.80.70.116", function(conn)
+nodemcu.ID = wifi.sta.getip()
+  srv:listen(80,nodemcu.ID, function(conn)
       print("estabeleceu conexÃ£o")
       conn:on("receive", receiver)
     end)
@@ -166,7 +237,7 @@ function conectado (client)
     recebeInfos(client)
 end 
 
-m:connect("10.80.70.115", 1883, 0,
+m:connect(nodemcu.MQTT_SERVER, 1883, 0,
              conectado,
 function(client, reason) print("failed reason: "..reason) end)
 
