@@ -3,10 +3,11 @@ nodemcu = {
     ID = 0,
     wificonfig = {
         --Colocar em SSID a rede desejada para conectar
-        ssid = "Valinor",
-        pwd = "bateria123",
+        ssid = "Homem's Wi-Fi",
+        pwd = "02051993",
         save = false
-    }
+    },
+    MQTT_SERVER = "10.80.70.115"
 }
 
 --Definindo LEDS
