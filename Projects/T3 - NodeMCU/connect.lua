@@ -7,7 +7,8 @@ nodemcu = {
         pwd = "02051993",
         save = false
     },
-    MQTT_SERVER = "10.80.70.115"
+    MQTT_SERVER = "10.80.70.115",
+    Status = "free"
 }
 
 --Definindo LEDS
