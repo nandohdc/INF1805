@@ -1,0 +1,58 @@
+#include "/home/terra/TerraNG/terra/TerraNet.defs"
+
+var ushort nodeId = getNodeId();
+var ubyte stat;
+pktype usrMsg from radioMsg with
+	var ubyte[4]  d8;
+	var ushort[4] d16;
+	var ulong[2]  d32;
+end
+
+var usrMsg sndData;
+var usrMsg recData;
+sndData.type=1;
+sndData.target = BROADCAST;
+sndData.source = nodeId;
+sndData.d32[0] = 0;
+
+if nodeId !=1 then
+		sndData.source = nodeId;
+	
+		if nodeId == 11 then
+			sndData.target = 1;
+			recData.target = 1;
+		else
+			sndData.target = nodeId - 1;
+			recData.target = nodeId - 1;
+		end
+par do
+	loop do
+		emit REQ_TEMP();
+		sndData.d16[0] = await TEMP;
+		/*emit SEND(sndData);
+		await SEND_DONE;*/
+		inc sndData.d8[0];
+		stat = qPut(sndData);
+		await TEMP;
+	end
+/*with
+	loop do
+		recData = await RECEIVE;
+		emit LEDS(recData.d8[0]);
+	end*/
+with
+	loop do
+		await Q_READY;
+		stat = qGet(recData);
+		emit SEND(recData);
+		await SEND_DONE;
+	end
+with
+	loop do
+	recData=await RECEIVE;
+	emit SEND(recData);
+	await SEND_DONE;
+	end
+end
+emit LED0(ON);
+end
