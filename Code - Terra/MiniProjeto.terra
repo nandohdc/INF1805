@@ -11,9 +11,15 @@ end
 var usrMsg sndData;
 var usrMsg recData;
 var usrMsg queueData;
-sndData.type=1;
+var usrMsg parentData;
+var ushort parent;
+var ushort nivel;
+sndData.type = 1;
+parentData.type = 2;
 sndData.target = BROADCAST;
 sndData.source = nodeId;
+parentData.source = nodeId;
+parentData.target = BROADCAST;
 sndData.d32[0] = 0;
 
 if nodeId !=1 then
@@ -25,6 +31,23 @@ if nodeId !=1 then
         else
             sndData.target = nodeId - 1;
             recData.target = nodeId - 1;
+        end
+
+        if nodeId == 11 then
+            parentData.d16[0] = 1;
+            nivel = 1;
+            emit SEND(parentData);
+            await SEND_DONE;
+            emit LED0(ON);
+        else
+            parentData = await RECEIVE (2);
+            parent = parentData.source;
+            parentData.source = nodeId;
+            parentData.d16[0] = parentData.d16[0] + 1;
+            nivel = parentData.d16[0];
+            emit SEND(parentData);
+            await SEND_DONE;
+            emit LED1(ON);
         end
 par do
     loop do
@@ -38,7 +61,7 @@ par do
         if nodeId == 11 then
             sndData.target = 1;
         else
-            sndData.target = nodeId - 1;
+            sndData.target = parent;
         end
 
         stat = qPut(sndData);
@@ -63,12 +86,14 @@ with
     end
 with
     loop do
-        recData = await RECEIVE;
+        recData = await RECEIVE (1);
 
         if nodeId == 11 then
             recData.target = 1;
         else
-            recData.target = nodeId - 1;
+            recData.target = parent;
+
+
         end
 
         stat = qPut(recData);
