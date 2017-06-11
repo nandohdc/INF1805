@@ -16,7 +16,7 @@ var ushort parent;
 var ushort nivel;
 var ushort r_delay;
 var ushort round;
-
+var ushort counter;
 sndData.type = 1;
 parentData.type = 2;
 sndData.target = BROADCAST;
@@ -39,8 +39,8 @@ if nodeId !=1 then
         if nodeId == 11 then
             parentData.d16[0] = 1;
             nivel = 1;
-            emit SEND(parentData);
-            await SEND_DONE;
+            emit SEND_ACK(parentData);
+            await SEND_DONE_ACK;
             emit LED0(ON);
         else
             parentData = await RECEIVE (2);
@@ -53,15 +53,17 @@ if nodeId !=1 then
             emit LED1(ON);
         end      
 round = 0;
-r_delay = random()%15;
+counter = 0;
+r_delay = random()%10000;
 /*r_delay = random()%(nivel*4);*/
 await (nivel)s;
-await (r_delay)s;
+await (r_delay)ms;
 par do
     loop do
         /*await (random()/10)s;*/
         await 33s;
 		round = round + 1;
+		counter = 0;
         /*await (11*nodeId/7)s;*/  
         emit REQ_TEMP();
         sndData.d16[0] = await TEMP;
@@ -86,13 +88,17 @@ with
     loop do
         if(qSize() > 0) then
             stat = qGet(queueData);
-            emit SEND(queueData);
-            await SEND_DONE;
+            emit SEND_ACK(queueData);
+            await SEND_DONE_ACK;
+			await (100)ms;
+			counter = counter + 1;
         else
             await Q_READY;
             stat = qGet(queueData);
-            emit SEND(queueData);
-            await SEND_DONE;
+            emit SEND_ACK(queueData);
+            await SEND_DONE_ACK;
+			await (100)ms;
+			counter = counter + 1;
         end
     end
 with
