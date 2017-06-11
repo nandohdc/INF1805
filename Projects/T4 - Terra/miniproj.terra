@@ -1,0 +1,113 @@
+#include "/home/terra/TerraNG/terra/TerraNet.defs"
+
+var ushort nodeId = getNodeId();
+var ubyte stat;
+pktype usrMsg from radioMsg with
+    var ubyte[4]  d8;
+    var ushort[4] d16;
+    var ulong[2]  d32;
+end
+
+var usrMsg sndData;
+var usrMsg recData;
+var usrMsg queueData;
+var usrMsg parentData;
+var ushort parent;
+var ushort nivel;
+var ushort r_delay;
+var ushort round;
+
+sndData.type = 1;
+parentData.type = 2;
+sndData.target = BROADCAST;
+sndData.source = nodeId;
+parentData.source = nodeId;
+parentData.target = BROADCAST;
+sndData.d32[0] = 0;
+
+if nodeId !=1 then
+        sndData.source = nodeId;
+  
+        if nodeId == 11 then
+            sndData.target = 1;
+            recData.target = 1;
+        else
+            sndData.target = nodeId - 1;
+            recData.target = nodeId - 1;
+        end
+
+        if nodeId == 11 then
+            parentData.d16[0] = 1;
+            nivel = 1;
+            emit SEND(parentData);
+            await SEND_DONE;
+            emit LED0(ON);
+        else
+            parentData = await RECEIVE (2);
+            parent = parentData.source;
+            parentData.source = nodeId;
+            parentData.d16[0] = parentData.d16[0] + 1;
+            nivel = parentData.d16[0];
+            emit SEND(parentData);
+            await SEND_DONE;
+            emit LED1(ON);
+        end      
+round = 0;
+r_delay = random()%15;
+/*r_delay = random()%(nivel*4);*/
+await (nivel)s;
+await (r_delay)s;
+par do
+    loop do
+        /*await (random()/10)s;*/
+        await 33s;
+		round = round + 1;
+        /*await (11*nodeId/7)s;*/  
+        emit REQ_TEMP();
+        sndData.d16[0] = await TEMP;
+        /*emit SEND(sndData);
+        await SEND_DONE;*/
+        inc sndData.d8[0];
+
+        if nodeId == 11 then
+            sndData.target = 1;
+        else
+            sndData.target = parent;
+        end
+		sndData.d16[1] = round;
+        stat = qPut(sndData);
+    end
+/*with
+    loop do
+        recData = await RECEIVE;
+        emit LEDS(recData.d8[0]);
+    end*/
+with
+    loop do
+        if(qSize() > 0) then
+            stat = qGet(queueData);
+            emit SEND(queueData);
+            await SEND_DONE;
+        else
+            await Q_READY;
+            stat = qGet(queueData);
+            emit SEND(queueData);
+            await SEND_DONE;
+        end
+    end
+with
+    loop do
+        recData = await RECEIVE (1);
+
+        if nodeId == 11 then
+            recData.target = 1;
+        else
+            recData.target = parent;
+
+        end
+
+        stat = qPut(recData);
+    end
+end
+emit LED0(ON);
+end
