@@ -8,7 +8,7 @@ nodemcu = {
         pwd = "bateria123",
         save = false
     },
-    MQTT_SERVER = "192.168.43.35",
+    MQTT_SERVER = "10.0.2.15",
     PORT = 1883,
 
 }
@@ -17,8 +17,10 @@ nodemcu = {
 AvgTemp = 0
 FreeSpaces = 0
 OccupiedSpaces = 0
-hotSpot  = {x = 0, y = 0, temp = 0 } 
-coldSpot = {x = 0, y = 0, temp = 100 } 
+Maxtemp = 0
+Mintemp = 0
+hotSpot  = {} 
+coldSpot = {} 
 
 
 Table = {}
@@ -38,6 +40,33 @@ function splitString(newString,pattern)
 	table.insert(splittedString, i)
     end
     return splittedString
+end
+
+function updateMaxMinTemp()
+local mintemp = 9999
+local maxtemp = 0
+local avgtemp = 0
+local c = 0
+local temp = 0
+    for i in pairs(Table) do
+        c = c + 1
+        temp = tonumber(Table[i].Temp)
+        if (temp < mintemp) then
+            mintemp = temp
+            coldSpot = Table[i]
+        end
+        if(temp > maxtemp) then
+            maxtemp = temp
+            hotSpot = Table[i]
+        end
+        avgtemp = avgtemp + temp
+     
+    end
+    if c ~= 0 then
+        AvgTemp = avgtemp/c
+    end
+	MinTemp = mintemp
+	MaxTemp = maxtemp
 end
 
 function callback(topic, payload)
@@ -73,26 +102,11 @@ function callback(topic, payload)
 		t.Temp = plTmp
 		--mqtt_client:publish("test", "table["..plId.."].Status = "..plStat)
 		--mqtt_client:publish("test", "table["..plId.."].plTmp = "..plTmp)
-		updateHotAndColdSpot(plTmp) -- n sei se funciona ainda
+		updateMaxMinTemp() -- n sei se funciona ainda
 	end
 	
 	
 	
-end
-
-function updateHotAndColdSpot(new_temp)
-	
-		if(new_temp > hotSpot.temp) then
-			hotSpot.temp = plTmp
-			hotspot.x = t.x
-			hotspot.y = t.y
-		end
-		if(new_temp < coldSpot.temp) then
-			coldSpot = plTmp
-			coldSpot.temp = plTmp
-			coldSpot.x = t.x
-			coldSpot.y = t.y
-		end
 end
 
 function newButton (bx,by,text)
@@ -135,15 +149,29 @@ function love.load()
 	cs_button = newButton(800,75, "Cold Spot")
 end
 
+function Hover()
+	local _x, _y = love.mouse.getPosition()
+	if(hs_button.x < _x and _x < (hs_button.x + hs_button.w) and hs_button.y < _y and _y < (hs_button.y + hs_button.h)) then
+		love.graphics.setColor(255, 0, 0)
+      		love.graphics.circle('line',hotSpot.x+25,hotSpot.y+15,30)
+	elseif (cs_button.x < _x and _x < (cs_button.x + cs_button.w) and cs_button.y < _y and _y < (cs_button.y + cs_button.h))then
+		love.graphics.setColor(0, 0, 255)
+      		love.graphics.circle('line',hotSpot.x+25,hotSpot.y+15,30)	
+	end
+end
+
 function love.draw()
 
   love.graphics.draw(img.background, 0, 0)
   -- Draws only the occupied tables
   for i,v in ipairs(Table) do
 	if(v.Status == "occupied") then
-		love.graphics.draw(img.s1, v.x, v.y)
+		love.graphics.draw(img[1], v.x, v.y)
 	end
   end
+	if(love.mouse.isDown("1")) then
+		Hover()
+	end
 	-- draw buttons
 	cs_button.draw()
 	hs_button.draw()
