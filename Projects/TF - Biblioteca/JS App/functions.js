@@ -21,7 +21,7 @@ function insertTextTable(ID_TAG, info){
 */
 
 function updateQTDA(nElements){
-	table_head["QTDA"] = nElements
+	table_head["QTDA"] = nElements;
 
 	if(nElements < 1){
 		table_head["QTDA"] = 0;
