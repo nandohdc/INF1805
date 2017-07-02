@@ -21,7 +21,7 @@ function insertTextTable(ID_TAG, info){
 */
 
 function updateQTDA(nElements){
-	table_head["QTDA"] = nElements;
+	table_head["QTDA"] = array_NodeClients.length;
 
 	if(nElements < 1){
 		table_head["QTDA"] = 0;
@@ -161,8 +161,8 @@ function insertTableMain(table_name, index_of_array_node_clients){
 	}
 }
 
-function updateTableHead(array_NodeClients_length){
-	updateQTDA(array_NodeClients_length);
+function updateTableHead(){
+	updateQTDA();
 	updateOccupiedDevices();
 	updateFreeDevices();
 	updateMinTemp();
