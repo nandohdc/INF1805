@@ -8,17 +8,17 @@ nodemcu = {
         pwd = "bateria123",
         save = false
     },
-    MQTT_SERVER = "10.0.2.15",
+    MQTT_SERVER = "192.168.43.35",
     PORT = 1883,
 
 }
 
 
 AvgTemp = 0
-FreeSpaces = 0
-OccupiedSpaces = 0
-Maxtemp = 0
-Mintemp = 0
+qtdFreeSpaces = 0
+qtdOccupiedSpaces = 0
+MaxTemp = 0
+MinTemp = 0
 hotSpot  = {} 
 coldSpot = {} 
 
@@ -40,6 +40,23 @@ function splitString(newString,pattern)
 	table.insert(splittedString, i)
     end
     return splittedString
+end
+
+function updateStatus()
+    local freesum, occsum = 0,0
+    local tmpS
+    for i in pairs(Table) do
+        tmpS = Table[i].Status
+        if(tmpS == "occupied") then
+            occsum = occsum + 1
+        elseif(tmpS == "free") then
+            freesum = freesum + 1
+        else
+            print("UPDATE ERROR: Not free nor occupied")
+        end
+    end
+    qtdFreeSpaces = freesum
+    qtdOccupiedSpaces = occsum
 end
 
 function updateMaxMinTemp()
@@ -64,6 +81,9 @@ local temp = 0
     end
     if c ~= 0 then
         AvgTemp = avgtemp/c
+	AvgTemp = string.format("%2.1f",AvgTemp)
+	AvgTemp = tonumber(AvgTemp)
+
     end
 	MinTemp = mintemp
 	MaxTemp = maxtemp
@@ -89,7 +109,8 @@ function callback(topic, payload)
 	elseif(topic == "infos") then
 		local split_space = splitString(payload,"S") -- 192.168.33.1 "free" 30.2
 		local split_ip = splitString(split_space[1],"P") -- 192.168.33.1
-
+		
+		split_space[3] = string.format("%2.1f",split_space[3])
 		local plTmp = tonumber(split_space[3]) -- payload new temp
 		local plId = split_space[1] -- payload ID
 		local plStat = split_space[2] -- payload new status
@@ -103,6 +124,7 @@ function callback(topic, payload)
 		--mqtt_client:publish("test", "table["..plId.."].Status = "..plStat)
 		--mqtt_client:publish("test", "table["..plId.."].plTmp = "..plTmp)
 		updateMaxMinTemp() -- n sei se funciona ainda
+		updateStatus()
 	end
 	
 	
@@ -156,7 +178,7 @@ function Hover()
       		love.graphics.circle('line',hotSpot.x+25,hotSpot.y+15,30)
 	elseif (cs_button.x < _x and _x < (cs_button.x + cs_button.w) and cs_button.y < _y and _y < (cs_button.y + cs_button.h))then
 		love.graphics.setColor(0, 0, 255)
-      		love.graphics.circle('line',hotSpot.x+25,hotSpot.y+15,30)	
+      		love.graphics.circle('line',coldSpot.x+25,coldSpot.y+15,30)	
 	end
 end
 
@@ -166,7 +188,7 @@ function love.draw()
   -- Draws only the occupied tables
   for i,v in ipairs(Table) do
 	if(v.Status == "occupied") then
-		love.graphics.draw(img[1], v.x, v.y)
+		love.graphics.draw(img[(i%#img)+1], v.x, v.y)
 	end
   end
 	if(love.mouse.isDown("1")) then
@@ -175,6 +197,11 @@ function love.draw()
 	-- draw buttons
 	cs_button.draw()
 	hs_button.draw()
+	love.graphics.print("Free Spots : "..qtdFreeSpaces,800,135)
+	love.graphics.print("Occupied Spots : "..qtdOccupiedSpaces,800,155)
+	love.graphics.print("Avarage temp :  "..AvgTemp,800,175)
+	love.graphics.print("Highest temp :  "..MaxTemp,800,195)
+	love.graphics.print("Lowest temp :  "..MinTemp,800,215)
 end
 
 function love.update(dt)

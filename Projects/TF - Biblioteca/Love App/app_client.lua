@@ -1,4 +1,5 @@
 local m = mqtt.Client(nodemcu.ID, 120)
+local m2 = mqtt.Client(nodemcu.ID.."2", 120)
 local deb_old,deb_new = 0,0;
 local button1, button2 = 1,2
 gpio.mode(button1,gpio.INT,gpio.PULLUP)
@@ -29,7 +30,7 @@ function publica(c)
       message = function()
               print("publicando..")
               nodemcu.ID = wifi.sta.getip()
-              c:publish("connect", nodemcu.ID,0,0, 
+              c:publish("nandohdc/connect", nodemcu.ID,0,0, 
                 function(c) print("ip enviado") end)
             end
     }
@@ -62,12 +63,12 @@ function reageBotao(pin,c)
        -- readtemp()
         print("reacting...")
        if(pin == button1) then
-            c:publish("infos",nodemcu.ID.." occupied "..TEMP,0,0, 
+            c:publish("nandohdc/infos",nodemcu.ID.." occupied "..TEMP,0,0, 
                 function(c) print("done") end)
             led_ocupado.liga()
             nodemcu.Status = "occupied"
        else
-            c:publish("infos",nodemcu.ID.." free "..TEMP,0,0, 
+            c:publish("nandohdc/infos",nodemcu.ID.." free "..TEMP,0,0, 
                 function(c) print("done") end)
             led_livre.liga()
             nodemcu.Status = "free"
@@ -109,7 +110,7 @@ function pulse (c)
               nodemcu.Status = "free"
         end
         print("avg : "..sum)
-        c:publish("infos",nodemcu.ID.." "..nodemcu.Status.." "..TEMP,0,0,function() print("sent from alarm")  end)
+        c:publish("nandohdc/infos",nodemcu.ID.." "..nodemcu.Status.." "..TEMP,0,0,function() print("sent from alarm")  end)
         return
     end
     gpio.write(7,gpio.LOW)
@@ -129,7 +130,7 @@ function conectado (client)
     envia.message()
     gpio.trig(8,"up", function() trig_cb1(client) end)
     timer:register(100,tmr.ALARM_AUTO,function() pulse(client) end)
-    atimer:register(5000,tmr.ALARM_AUTO,function() avg = {} count = 0 timer:start() end)
+    atimer:register(15000,tmr.ALARM_AUTO,function() avg = {} count = 0 timer:start() end)
     atimer:start()
     gpio.trig(button1,"down", function () reageBotao(button1,client) end)
     gpio.trig(button2,"down", function () reageBotao(button2,client) end)
@@ -144,6 +145,9 @@ end
 
 
 ---------------------------------------------------------------
-m:connect("192.168.43.35", 1883, 0,
+m:connect(nodemcu.MQTT_SERVER, 1883, 0,
+           conectado,
+function(client, reason) print("failed reason: "..reason) end)
+m2:connect(nodemcu.MQTT_SERVER2, 1883, 0,
              conectado,
 function(client, reason) print("failed reason: "..reason) end)
