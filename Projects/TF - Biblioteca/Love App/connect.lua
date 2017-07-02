@@ -3,11 +3,12 @@ nodemcu = {
     ID = 0,
     wificonfig = {
         --Colocar em SSID a rede desejada para conectar
-        ssid = "Valinor",
-        pwd = "bateria123",
+        ssid = "TP-LINK-1D0F",
+        pwd = "rc230362",
         save = false
     },
-    MQTT_SERVER = "192.168.43.35",
+    MQTT_SERVER = 'test.mosca.io',
+    MQTT_SERVER2 = "192.168.43.35",
     Status = "free"
 }
 
