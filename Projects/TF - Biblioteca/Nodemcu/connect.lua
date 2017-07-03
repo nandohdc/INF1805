@@ -3,8 +3,8 @@ nodemcu = {
     ID = 0,
     wificonfig = {
         --Colocar em SSID a rede desejada para conectar
-        ssid = "TP-LINK-1D0F",
-        pwd = "rc230362",
+        ssid = "Valinor",
+        pwd = "bateria123",
         save = false
     },
     MQTT_SERVER = 'test.mosca.io',
@@ -24,7 +24,6 @@ function LED(led_pin)
                     gpio.write(pin, gpio.LOW)
                  end,
         liga = function()
-                print("O NodeMCU #"..nodemcu.ID.." Led #"..pin.." Ligado")
                 gpio.write(pin, gpio.HIGH)
                end,
         desliga = function()
