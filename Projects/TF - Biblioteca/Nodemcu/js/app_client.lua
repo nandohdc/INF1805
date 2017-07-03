@@ -25,7 +25,7 @@ function sndConnect(c)
       message = function()
               print("publicando..")
               nodemcu.ID = wifi.sta.getip()
-              c:publish("connect", nodemcu.ID,0,0, 
+              c:publish("nandohdc/connect", nodemcu.ID,0,0, 
                 function(c) print("ip enviado") end)
             end
     }
@@ -61,7 +61,7 @@ function pulse (c)
               led_livre.liga()
         end
         print("avg : "..sum)
-        c:publish("infos",nodemcu.ID.." "..nodemcu.Status.." "..TEMP,0,0,function() print("sent from alarm")  end)
+        c:publish("nandohdc/infos",nodemcu.ID.." "..nodemcu.Status.." "..TEMP,0,0,function() print("sent from alarm")  end)
         return
     end
     gpio.write(7,gpio.LOW)
@@ -85,6 +85,6 @@ end
 
 
 ---------------------------------------------------------------
-m:connect(nodemcu.MQTT_SERVER2, 1883, 0,
+m:connect(nodemcu.MQTT_SERVER, 1883, 0,
            conectado,
 function(client, reason) print("failed reason: "..reason) end)

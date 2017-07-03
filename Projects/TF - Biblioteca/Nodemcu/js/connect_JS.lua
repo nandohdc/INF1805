@@ -8,9 +8,9 @@ nodemcu = {
         save = false
     },
     MQTT_SERVER = 'test.mosca.io',
-    MQTT_SERVER2 = "192.168.43.35",
     Status = "free"
 }
+
 
 --Definindo LEDS
 LD1 = 6;
@@ -24,6 +24,7 @@ function LED(led_pin)
                     gpio.write(pin, gpio.LOW)
                  end,
         liga = function()
+                print("O NodeMCU #"..nodemcu.ID.." Led #"..pin.." Ligado")
                 gpio.write(pin, gpio.HIGH)
                end,
         desliga = function()
@@ -39,7 +40,7 @@ wifi.sta.config(nodemcu.wificonfig)
 wifi.sta.connect()
 
 if(wifi.sta.status() == 5) then
-    nodemcu.ID = wifi.sta.getip()
+    nodemcu.ID = wifi.sta.getmac()
     print("O NodeMCU #"..nodemcu.ID.." is connected to "..nodemcu.wificonfig.ssid)
     local led_green = LED(LD1)
     local led_red = LED(LD2)
